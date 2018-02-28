@@ -1,0 +1,10 @@
+"0","advertising = read_csv(""Data/advertising.csv"")"
+"2","Parsed with column specification:
+cols(
+  id = col_integer(),
+  TV = col_double(),
+  Radio = col_double(),
+  Newspaper = col_double(),
+  Sales = col_double()
+)
+"

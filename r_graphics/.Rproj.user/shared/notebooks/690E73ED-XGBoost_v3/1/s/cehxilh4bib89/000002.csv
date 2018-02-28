@@ -1,0 +1,99 @@
+"0","# This is a minimal framework for training xgboost in R using caret to do the cross-validation/grid tuning and using the normalized gini metric for scoring. The "
+"0","# of CV folds and size of the tuning grid are limited to remain under kaggle kernel limits."
+"0","# To improve the score up the nrounds and expand the tuning grid."
+"0","library(data.table)"
+"2","package ‘data.table’ was built under R version 3.4.2"
+"2","data.table 1.10.4.2
+"
+"2","  The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way
+"
+"2","  Documentation: ?data.table, example(data.table) and browseVignettes(""data.table"")
+"
+"2","  Release notes, videos and slides: http://r-datatable.com
+"
+"0","library(caret)"
+"2","Carregando pacotes exigidos: lattice
+"
+"2","Carregando pacotes exigidos: ggplot2
+"
+"0","library(xgboost)"
+"0","library(verification)"
+"2","package ‘verification’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: fields
+"
+"2","package ‘fields’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: spam
+"
+"2","package ‘spam’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: dotCall64
+"
+"2","package ‘dotCall64’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: grid
+"
+"2","Spam version 2.1-1 (2017-07-02) is loaded.
+Type 'help( Spam)' or 'demo( spam)' for a short introduction 
+and overview of this package.
+Help for individual functions is also obtained by adding the
+suffix '.spam' to the function name, e.g. 'help( chol.spam)'.
+"
+"2","
+Attaching package: ‘spam’
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    backsolve, forwardsolve
+
+"
+"2","Carregando pacotes exigidos: maps
+"
+"2","package ‘maps’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: boot
+"
+"2","
+Attaching package: ‘boot’
+
+"
+"2","The following object is masked from ‘package:lattice’:
+
+    melanoma
+
+"
+"2","Carregando pacotes exigidos: CircStats
+"
+"2","package ‘CircStats’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: MASS
+"
+"2","Carregando pacotes exigidos: dtw
+"
+"2","package ‘dtw’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: proxy
+"
+"2","package ‘proxy’ was built under R version 3.4.2"
+"2","
+Attaching package: ‘proxy’
+
+"
+"2","The following object is masked from ‘package:spam’:
+
+    as.matrix
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    as.dist, dist
+
+"
+"2","The following object is masked from ‘package:base’:
+
+    as.matrix
+
+"
+"2","Loaded dtw v1.18-1. See ?dtw for help, citation(""dtw"") for use in publication.
+
+"
+"0","library(ROSE)"
+"2","package ‘ROSE’ was built under R version 3.4.2"
+"2","Loaded ROSE 0.0-3
+
+"

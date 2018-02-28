@@ -1,0 +1,2 @@
+"0","sim3 %>% ggplot(aes(x1, y, color = x2)) + geom_point() +"
+"0","  geom_line(data = grid3, aes(y = pred)) + facet_wrap(~ model)"

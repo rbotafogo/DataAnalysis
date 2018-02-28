@@ -1,0 +1,1 @@
+"0","sim2_lm_fit = lm(y ~ x, data = sim2)"

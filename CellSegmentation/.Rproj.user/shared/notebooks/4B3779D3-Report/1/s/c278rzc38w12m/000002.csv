@@ -1,0 +1,1 @@
+"0","seg_train1_glm_fit = glm(Class ~ ., data=seg_train1, family=binomial())"

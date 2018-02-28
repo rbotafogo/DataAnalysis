@@ -1,0 +1,2 @@
+"0","seg_train13_glm_pred = predict(seg_train13_glm_fit, type = ""response"")"
+"0","conf = table(seg_train13$Class, seg_train13_glm_pred > 0.5)"

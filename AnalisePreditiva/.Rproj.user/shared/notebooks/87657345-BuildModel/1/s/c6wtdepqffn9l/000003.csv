@@ -1,0 +1,3 @@
+"0","grid2 = sim2 %>% data_grid(x)"
+"0","grid2 = grid2 %>% add_predictions(sim2_lm_fit)"
+"0","grid2"

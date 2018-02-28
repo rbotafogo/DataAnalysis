@@ -1,0 +1,8 @@
+"0","# mede a distância entre um modelo dados por interseção e coeficiente para os dados em sim1"
+"0","sim1_dist = function(intersept, slope) {"
+"0","  measure_distance(c(intersept, slope), sim1)"
+"0","}"
+"0","# verifica a distância de todos os modelos criados para os dados em sim1"
+"0","models = models %>%"
+"0","  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))"
+"0","models"

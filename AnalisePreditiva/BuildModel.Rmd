@@ -1,0 +1,240 @@
+---
+title: "Build a Model"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(modelr)
+options(na.action = na.warn)
+```
+
+Os dados em sim1 são dados simulados e vamos iniciar olhando os dados através de um "scatterplot".
+
+```{r sim1_scatter}
+ggplot(sim1, aes(x = x, y = y)) + geom_point()
+```
+
+Podemos observar que há um forte relacionamento linear entre as varáveis "x" e "y".  Vamos tentar capturar este relacionamento linear. Inicialmente vamos gerar 250 modelos diferente aleatórios e plotar todos os modelos por cima dos nossos dados. Para plotar todos os modelos vamos usar geom_abline passando a interseção e a inclinação.
+
+```{r}
+models = tibble (
+  a1 = runif(250, -20, 40),
+  a2 = runif(250, -5, 5)
+)
+
+ggplot(sim1, aes(x = x, y = y)) + 
+  geom_abline(aes(intercept = a1, slope = a2), 
+              data = models, alpha = 1/4) +
+  geom_point()
+```
+
+```{r model1}
+# Função model1 pega o valor de x de 'data' e calcula o valor de y corresponde no modelo
+model1 = function(a, data) {
+  a[1] + data$x * a[2]
+}
+
+# exemplo de como chamar a função model1, passando os valores de interseção e coeficiente
+model1(c(7, 1.5), sim1)
+```
+
+
+```{r measure_distance}
+measure_distance = function(mod, data) {
+  diff = data$y - model1(mod, data)
+  sqrt(mean(diff ^ 2))
+}
+
+measure_distance(c(7,1.5), sim1)
+```
+
+```{r sim1_dist}
+# mede a distância entre um modelo dados por interseção e coeficiente para os dados em sim1
+sim1_dist = function(intersept, slope) {
+  measure_distance(c(intersept, slope), sim1)
+}
+
+# verifica a distância de todos os modelos criados para os dados em sim1
+models = models %>%
+  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+
+models
+```
+
+```{r 10_best}
+ggplot(sim1, aes(x, y)) +
+  # colocar os pontos dos dados com tamanho 2 e cor especificada
+  geom_point(size = 2, color = "grey30") +
+  # adicionar as 10 primeiras ablines 
+  geom_abline(aes(intercept = a1, slope = a2, color = -dist), 
+              data = filter(models, rank(dist) <= 10))
+
+```
+
+Vamos fazer um grid de pontos em vez de gerar os pontos do modelo aleatoriamente e plotar os 10 melhores modelos.
+
+```{r grid}
+grid = expand.grid(
+  a1 = seq(-5, 20, length = 25),
+  a2 = seq(1, 3, length = 25)
+) %>%
+  mutate(dist = purrr::map2_dbl(a1, a2, sim1_dist))
+
+grid %>%
+  ggplot(aes(a1, a2)) + 
+  geom_point(data = filter(grid, rank(dist) <= 10), 
+             color = "red", size = 4) +
+  geom_point(aes(color = -dist))
+```
+
+Agora vamos sobrepor os 10 melhores modelos em cima dos dados originais
+```{r}
+ggplot(sim1, aes(x, y)) +
+  geom_point() +
+  geom_abline(data = filter(grid, rank(dist) <= 10),
+              aes(intercept = a1, slope = a2, color = -dist))
+```
+
+Utilizando a função lm do base R para encontrar o melhor modelo linear para estes pontos
+
+```{r}
+sim1_lm_fit = lm(y ~ x, data = sim1)
+coef(sim1_lm_fit)
+```
+
+Vamos plotar este modelo em cima dos dados
+
+```{r}
+sim1 %>% 
+  ggplot(aes(x, y)) + geom_point() +
+  geom_abline(intercept = coef(sim1_lm_fit)[[1]], 
+              slope = coef(sim1_lm_fit)[[2]], color = "red")
+```
+
+# Visualizando um Modelo
+
+Até o presente momento, utilizamos geom_abline para visualizar o resultado de nossa previsão. Esta solução é bastante simples e limitada a modelos lineares que podem ser facilmente visualizados.  Vamos agora utilizar uma metodologia mais genérica que se aplica a qualquer modelo, não somente a modelos lineares.
+
+Inicialmente cria-se uma grade para inserção dos dados da previsão
+
+```{r}
+grid = sim1 %>% data_grid(x)
+grid
+```
+
+Agora adicionamos à grade os valores obtidos na previsão
+
+```{r}
+grid = grid %>% add_predictions(sim1_lm_fit)
+grid
+```
+
+E finalmente, podemos visualizar o resultado do modelo através de um gráfico.  Neste momento, o gráfico é o mesmo já obtido anteriormente através do geom_abline.  Veremos adiante que esta metodologia é mais genérica
+
+```{r}
+sim1 %>%
+  ggplot(aes(x, y)) + geom_point() +
+  geom_line(data = grid, aes(y = pred), color = "red")
+```
+
+## Residuais
+
+Dando continuidade à visualização do modelo, vamos agora analisar os dados residuais.  Os residuais são o "erro" não capturado pelo modelo, dado, neste modelo, pela distância dos pontos estimados até os pontos reais.  Neste caso, os residuais são adicionados aos dados originais e não na grade, pois para adicionar os residuais é necessário ter a informação dos dados reais
+
+```{r residuals}
+sim1 = sim1 %>%
+  add_residuals(sim1_lm_fit)
+sim1
+```
+
+Vamos verificar as frequências do residual
+
+```{r}
+sim1 %>%
+  ggplot(aes(resid)) + geom_freqpoly(binwidth = 0.5)
+  
+```
+
+Vamos agora plotar o grpafico do residual no lugar do valor de y, ou seja, estamos olhando o gráfico das previsões "sem a tendência" calculada pelo modelo
+
+```{r}
+sim1 %>%
+  ggplot(aes(x, resid)) +
+  geom_ref_line(h = 0) +
+  geom_point()
+```
+Observamos que os residuais paracem distribuidos aleatoriamente, o que indica que a previsão feita anteriormente captura a maioria da tendência.
+
+## Formulas
+
+```{r}
+df = tribble(
+  ~ sex, ~ response,
+  "male", 1,
+  "female", 0,
+  "male", 1
+)
+
+model_matrix(df, response ~ sex)
+```
+
+Vamos fazer as mesmas etapas feitas anteriormente agora com outro modelo que contém variáveis de categoria.
+
+```{r}
+sim2_lm_fit = lm(y ~ x, data = sim2)
+```
+
+```{r}
+sim2 %>%
+  ggplot(aes(x, y)) + geom_point()
+```
+
+```{r}
+grid2 = sim2 %>% data_grid(x)
+grid2 = grid2 %>% add_predictions(sim2_lm_fit)
+grid2
+```
+
+```{r}
+sim2 %>%
+  ggplot(aes(x, y)) + geom_point() + 
+  geom_point(data = grid2, aes(y = pred), color = "red", size = 4)
+```
+
+Vamos verificar um terceiro modelo
+
+```{r}
+sim3 %>% ggplot(aes(x1, y)) + geom_point(aes(color = x2))
+
+sim3_lm_fit1 = lm(data = sim3, y ~ x1 + x2)
+sim3_lm_fit1
+
+sim3_lm_fit2 = lm(data = sim3, y ~ x1 * x2)
+sim3_lm_fit2
+```
+
+```{r}
+grid3 = sim3 %>% data_grid(x1, x2)
+grid3 = grid3 %>% gather_predictions(sim3_lm_fit1, sim3_lm_fit2)
+grid3
+```
+
+```{r}
+sim3 %>% ggplot(aes(x1, y, color = x2)) + geom_point() +
+  geom_line(data = grid3, aes(y = pred)) + facet_wrap(~ model)
+  
+```
+
+```{r}
+sim3_1 = sim3 %>% filter(x2 == "d")
+sim3_1_lm_fit = lm(data = sim3_1, y ~ x1)
+sim3_1 %>%
+  ggplot(aes(x1, y)) + geom_point() +
+  geom_abline(intercept = coef(sim3_1_lm_fit)[[1]], 
+              slope = coef(sim3_1_lm_fit)[[2]], color = "red")
+```
+```{r}
+sim3_1_lm_fit
+```
+

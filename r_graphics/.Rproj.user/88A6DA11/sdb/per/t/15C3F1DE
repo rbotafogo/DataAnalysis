@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Bar Graph\"\noutput: html_notebook\n---\n\n```{r}\nlibrary(ggplot2)\nlibrary(gcookbook)\n```\n\n```{r}\nupc = subset(uspopchange, rank(Change)>20)\nstr(upc)\n```\n\n\n```{r}\n# create graphics. Objects should be filled with grey to make a basic chart\npg = ggplot(data = upc, aes(x=Abb, y=Change))\n\n# type of graph\ngeom = geom_bar(stat=\"identity\", fill=\"grey\", width = 0.8)\npg = pg + geom \n\n# nice blue color\n# fill=\"#9ecae1\"\n\n# Add title, subtitle and caption\npg = pg + labs(title = \"Number of values per bar\", \n               subtitle = \"This is something very important\", \n               caption = \"Source: the Lahman baseball data\", \n               x = \"Abb\", y = \"Change\") \n\n# add coordinate aspect ration. This needs to be changed according with\n# the number of bars plotted.\npg = pg + coord_fixed(ratio=0.4)\n\n# remove major grids\nth = theme(panel.grid.major = element_blank())\n# remove minor grids\nth = th + theme(panel.grid.minor = element_blank())\n# remove border\nth = th + theme(panel.border = element_blank())\n# remove background\nth = th + theme(panel.background = element_blank())\n# Adjust the title\nth = th + theme(plot.title = element_text(hjust = 0))\n\n# Work on the x and y labels\n# Move the x and y labels to the border\nth = th + theme(axis.title = element_text(color=\"#666666\", face=\"bold\", size=10, hjust=1))\nth = th + theme(axis.text.x = element_text(angle = 45, vjust = 0.15))\n\n# add labels to the bars\n# labels = geom_text(aes(label=Change), vjust = -0.1, size = 2)\n\n\n# add basic theme to graph and plot\npg = pg + th\npg\n```\n\nChange the color of the graph to a nice blue color\n\n```{r}\ngeom = geom_bar(stat=\"identity\", fill=\"#9ecae1\", width = 0.8)\npg = pg + geom\npg\n```\n\n\n\n",
+    "created" : 1510944198850.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3386197910",
+    "id" : "15C3F1DE",
+    "lastKnownWriteTime" : 1510944202,
+    "last_content_update" : 1510944201891,
+    "path" : "T:/Rodrigo/DataAnalysis/r_graphics/bar_graph.Rmd",
+    "project_path" : "bar_graph.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -1,0 +1,5 @@
+"0","seg_train2 = seg_train"
+"0","# definir como pré-processar os dados"
+"0","pre_processo = preProcess(seg_train2, method=c(""BoxCox"", ""center"", ""scale"", ""pca""))"
+"0","# aplicar o pre_processo aos dados do próximo modelo"
+"0","seg_train2 = predict(pre_processo, seg_train2)"

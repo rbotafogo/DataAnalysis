@@ -1,0 +1,4 @@
+"0","ggplot(sim1, aes(x, y)) +"
+"0","  geom_point() +"
+"0","  geom_abline(data = filter(grid, rank(dist) <= 10),"
+"0","              aes(intercept = a1, slope = a2, color = -dist))"

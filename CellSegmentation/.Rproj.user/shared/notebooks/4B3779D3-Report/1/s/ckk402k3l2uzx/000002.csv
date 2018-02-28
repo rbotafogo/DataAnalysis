@@ -1,0 +1,4 @@
+"0","# obter os dados de teste apenas da região de baixa probabilidade"
+"0","# definir a variável erro_test (erro potencial) como os elementos cujo erro está dentro do range em torno"
+"0","# de 50%"
+"0","erro_test = seg_test_glm_pred > (0.5 - range) & seg_test_glm_pred < (0.5 + range)"

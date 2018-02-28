@@ -1,0 +1,41 @@
+"0","# suppressPackageseg_trainartupMessages()"
+"0","library(scales)"
+"0","library(ggplot2)"
+"0","library(caret)"
+"2","Carregando pacotes exigidos: lattice
+"
+"0","library(randomForest)"
+"2","package ‘randomForest’ was built under R version 3.4.2"
+"2","randomForest 4.6-12
+"
+"2","Type rfNews() to see new features/changes/bug fixes.
+"
+"2","
+Attaching package: ‘randomForest’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    margin
+
+"
+"0","library(ROCR)"
+"2","package ‘ROCR’ was built under R version 3.4.2"
+"2","Carregando pacotes exigidos: gplots
+"
+"2","package ‘gplots’ was built under R version 3.4.2"
+"2","
+Attaching package: ‘gplots’
+
+"
+"2","The following object is masked from ‘package:stats’:
+
+    lowess
+
+"
+"0","library(AppliedPredictiveModeling)"
+"0","data(segmentationOriginal)"
+"0","confusion = function(conf) {"
+"0","  percentual = (conf[1, 1] + conf[2, 2]) / sum(conf)"
+"0","  return (percentual)"
+"0","};"

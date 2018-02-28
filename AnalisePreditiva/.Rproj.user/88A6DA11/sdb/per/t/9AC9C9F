@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"ISLR Linear Regression\"\noutput: html_notebook\n---\n\n```{r setup, echo=FALSE}\n\nlibrary(ISLR)\nlibrary(tidyverse)\nlibrary(ggplot2)\n\n# Multiple plot function\n#\n# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)\n# - cols:   Number of columns in layout\n# - layout: A matrix specifying the layout. If present, 'cols' is ignored.\n#\n# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),\n# then plot 1 will go in the upper left, 2 will go in the upper right, and\n# 3 will go all the way across the bottom.\n#\nmultiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {\n  library(grid)\n\n  # Make a list from the ... arguments and plotlist\n  plots <- c(list(...), plotlist)\n\n  numPlots = length(plots)\n\n  # If layout is NULL, then use 'cols' to determine layout\n  if (is.null(layout)) {\n    # Make the panel\n    # ncol: Number of columns of plots\n    # nrow: Number of rows needed, calculated from # of cols\n    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),\n                    ncol = cols, nrow = ceiling(numPlots/cols))\n  }\n\n if (numPlots==1) {\n    print(plots[[1]])\n\n  } else {\n    # Set up the page\n    grid.newpage()\n    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))\n\n    # Make each plot, in the correct location\n    for (i in 1:numPlots) {\n      # Get the i,j matrix positions of the regions that contain this subplot\n      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))\n\n      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,\n                                      layout.pos.col = matchidx$col))\n    }\n  }\n}\n\n```\n\n```{r advertising_data, echo=FALSE}\nadvertising = read_csv(\"Data/advertising.csv\")\n```\n\nPodemos observar uma relação linear entre anúncios na TV e anúncios no rádio e as vendas.  Em relação a anúncios em jornal, a relação linear parece ser bem mais fraca.\n```{r simple_lm, echo=FALSE}\ntv_lm_fit = lm(Sales ~ TV, data = advertising)\nradio_lm_fit = lm(Sales ~ Radio, data = advertising)\nnewspaper_lm_fit = lm(Sales ~ Newspaper, data = advertising)\n\ntv = advertising %>% ggplot(aes(x = TV, y = Sales)) + geom_point() +\n  geom_abline(intercept = tv_lm_fit$coefficients[[1]],\n              slope = tv_lm_fit$coefficients[[2]], color = \"red\")\n\n\nradio = advertising %>% ggplot(aes(x = Radio, y = Sales)) + geom_point() +\n  geom_abline(intercept = radio_lm_fit$coefficients[[1]],\n              slope = radio_lm_fit$coefficients[[2]], color = \"red\")\n\nnewspaper = advertising %>% ggplot(aes(Newspaper, Sales)) + geom_point() +\n  geom_abline(intercept = newspaper_lm_fit$coefficients[[1]],\n              slope = newspaper_lm_fit$coefficients[[2]], color = \"red\")\n\nmultiplot(tv, radio, newspaper, cols=2)\n```\n```{r}\ntv_sum = summary(tv_lm_fit)\ntv_sum$coefficients\n```\n```{r}\nradio_sum = summary(radio_lm_fit)\nradio_sum$coefficients\n```\n\n```{r}\nnewspaper_sum = summary(newspaper_lm_fit)\nnewspaper_sum$coefficients\n```\n\n",
+    "created" : 1513711151718.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1758286175",
+    "id" : "9AC9C9F",
+    "lastKnownWriteTime" : 1513714858,
+    "last_content_update" : 1513714857110,
+    "path" : "T:/Rodrigo/DataAnalysis/AnalisePreditiva/islr_linear_reg.Rmd",
+    "project_path" : "islr_linear_reg.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "last_setup_crc32" : "",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -1,0 +1,788 @@
+---
+output:
+  pdf_document:
+    includes:
+      in_header: ["../EBTBase.sty", "../EBTstyle.sty"]
+    number_sections: yes
+  html_document: default
+  html_notebook: default
+  word_document:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 7
+---
+
+\input{../EBTPrimeiraPagina.tex}
+
+
+```{r setup, include = FALSE}
+
+library(tidyverse)
+library(knitr)
+library(scales)
+library(formattable)
+library(forcats)
+library(lubridate)
+library(gridExtra)
+library(grid)
+library(kableExtra)
+# library(readxl)
+
+# definir que kable deve utilizar latex
+options(knitr.table.format = "latex")
+
+# definir o tema global do gráfico
+# remove major grids
+global_theme = theme(panel.grid.major = element_blank())
+# remove minor grids
+global_theme = global_theme + theme(panel.grid.minor = element_blank())
+# remove border
+global_theme = global_theme + theme(panel.border = element_blank())
+# remove background
+global_theme = global_theme + theme(panel.background = element_blank())
+# Adjust the title
+global_theme = global_theme + 
+  theme(plot.title = element_text(hjust = 0, color="#9ecae1"))
+# Add border around the plot
+# global_theme = global_theme + theme(plot.background = element_rect(colour = "black", fill=NA, size=1))
+# Change font of axis
+global_theme = global_theme + theme(axis.text=element_text(size=8, color = "#000080"))
+
+# Definir o tema do titulo do eixo
+axis_title = theme(axis.title = element_text(color="#000080", 
+                                             face="bold", size=8, hjust=1))
+
+# Definir tema de gráficos de barra
+# remover o eixo y
+gr_bar_theme = theme(axis.line.y = element_blank(), axis.text.y = element_blank(), 
+                     axis.ticks.y = element_blank())
+
+# ajustar título dos eixos
+gr_bar_theme = gr_bar_theme + axis_title
+
+# Definir tema de gráficos de colunas
+# remover o eixo x
+gr_column_theme = theme(axis.line.x = element_blank(), 
+                        axis.text.x = element_blank(), 
+                        axis.ticks.x = element_blank())
+
+# ajustar título dos eixos
+gr_column_theme = gr_column_theme + axis_title
+
+# Definir tema para gráfico composto
+gr_comp_theme = axis_title
+
+br_acc = function(valor) {
+  accounting(valor, big.mark = ".", decimal.mark=",")
+}
+```
+
+```{r raw_data, include=FALSE}
+
+# ler arquivo de inventário
+inventario = read_csv2("../Dados/Inventario.csv", locale = locale(date_names = "br", encoding = "iso8859-1", decimal_mark = ",", grouping_mark = "."))
+
+inventario$Cliente = inventario$Cliente %>%
+  recode(`UNIAO BRASILEIRA DE EDUCACAO E ENSINO (UBEE)` = "UBEE") %>%
+  recode(`CENIBRA - CELULOSE NIPO BRASILEIRA S A` = "CENIBRA") %>%
+  factor()
+
+# adicionar data de ativação (da) no formato de data, data de vencimento (dv), 
+# valor do software (vs), valor do hardware (vh), valor total (vt)
+inventario = inventario %>%
+  mutate(da = parse_date(`Data de ativação`, format="%d/%m/%Y"),
+         de = parse_date(`Data expiração do contrato`, format="%d/%m/%Y"),
+         dv = parse_date(`Data Vencimento`, format="%d/%m/%Y"), 
+         vs = parse_number(`Valor SW`, 
+                           locale = locale(decimal_mark = ",",
+                           grouping_mark = ".")),
+         vh = parse_number(`Valor HW`, 
+                           locale = locale(decimal_mark = ",",
+                           grouping_mark = ".")),
+         vt = parse_number(`Valor Total (SW+HW)`, locale = 
+                           locale(decimal_mark = ",",
+                           grouping_mark = ".")),
+         duracao = parse_number(`Duração do Contrato - Mês`),
+         dass = de - months(duracao),
+         `Data de Assinatura do Contrato` = 
+           paste0(day(dass),"/",month(dass),"/",year(dass)))
+```
+
+```{r equipamentos_ativos, include=FALSE}
+
+# Filtrar todos os equipamentos ativos e eliminar do fator cliente, clientes não ativos
+ativos = inventario %>% filter(Status == "Ativo") %>%
+  mutate(Cliente = factor(Cliente, unique(Cliente)))
+```
+
+# Principais Clientes do Business Security por Faturamento
+
+```{r faturamento, include=FALSE}
+# ler arquivo de inventário
+faturamento = read_csv2("../Dados/Faturamento.csv", locale = locale(date_names = "br", encoding = "iso8859-1", decimal_mark = ",", grouping_mark = "."))
+
+colnames(faturamento)[1] = "Cliente"
+
+faturamento$Cliente = faturamento$Cliente %>%
+  recode(`UNIAO BRASILEIRA DE EDUCACAO E ENSINO` = "UBEE") %>%
+  recode(`CELULOSE NIPO BRASILEIRA S A CENIBRA` = "CENIBRA") %>%
+  factor()
+```
+
+```{r gather_fat, echo=FALSE}
+# Os valores 4:12 representam as colunas dos meses.  As 3 primeiras colunas da planilha contém
+# informações sobre o cliente, o serviço e a sigla do serviço.  A partir da 4 coluna temos o mês de
+# Janeiro até a 12 coluna com o mês de setembro.  Quando a planilha estiver completa, as colunas
+# devem ser 5:16
+fat = faturamento %>% gather(5:16, key="meses", value = "Faturamento")
+
+# remover a Secretaria de Segurança Pública das análises
+fat = filter(fat, CONTA_CORRENTE != "000000775350001")
+
+# elimina a extenção "/17" dos meses
+fat$meses = fat$meses %>% str_replace("/17", "")
+
+# ordena os fatores de acordo com os meses corretamente
+fat$meses = factor(fat$meses, levels = c("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"))
+
+# faturamento total no ano
+fat_total_ano = sum(fat$Faturamento, na.rm = TRUE)
+```
+
+O faturamento do Business Security em 2017 foi de R\$ `r br_acc(fat_total_ano)`.  A tabela abaixo mostra os 20 maiores clientes do Business Security por valor faturado em 2017.  
+
+```{r fat_cliente, echo=FALSE}
+# calcula o faturamento total por cliente
+fat_tot_cliente = fat %>% group_by(Cliente) %>% 
+  summarise(Faturamento = br_acc(sum(Faturamento, na.rm = TRUE))) %>%
+  arrange(desc(Faturamento))
+
+kable(head(fat_tot_cliente, 20), booktabs = T) %>% 
+  kable_styling(latex_options = "striped")
+```
+
+```{r rem_sec, echo=FALSE}
+# calcula o faturamento mensal do Business Security
+fat_tot_mes = fat %>% group_by(meses) %>% 
+  summarise(Faturamento = br_acc(sum(Faturamento, na.rm = TRUE)))
+```
+
+O gráfico abaixo mostra o faturamento do Business Security, mês-a-mês e o acumulado no período.  Em geral o faturamento do Business Security é crescente mês-a-mês. As variações observadas são, normalmente, reflexo de pagamentos acumulados que são feitos em um único mês, parecendo que houve redução de faturamento no mês seguinte.
+
+```{r fat_graph, echo=FALSE}
+# fazer histograma com os dados de firewall_mes
+grid.arrange(
+  textGrob("Faturamento em milhares de R$", 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob("Mensal e acumulado",  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  ggplot(fat_tot_mes, aes(x=meses)) + global_theme + gr_bar_theme +
+    geom_bar(aes(y=Faturamento/1000), stat="identity", fill="#9ecae1") + 
+    geom_text(aes(y=(Faturamento/1000),
+                  label=br_acc(sprintf("%.0f", Faturamento/1000))), 
+              vjust = 1.7, size=3) + 
+    geom_line(aes(y = cumsum(Faturamento/1000), group=1),
+              color = "#9ecae1", size=1) + 
+    scale_linetype("") + 
+    geom_point(aes(y = cumsum(Faturamento/1000))) + 
+    geom_text(aes(y = cumsum(Faturamento/1000),
+                  label=br_acc(sprintf("%.0f", cumsum(Faturamento/1000)))),
+              hjust=1.2, size=3) + labs(x="meses", y=""),
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+```{r faturamento_anos, include=FALSE}
+# ler arquivo de inventário
+fat_anos = read_csv2("../Dados/Fat_anos.csv", locale = locale(date_names = "br", encoding = "iso8859-1", decimal_mark = ",", grouping_mark = "."))
+```
+
+No gráfico abaixo, vemos o crescimento de faturamento do Business Security desde 2014.  O faturamento em 2014 foi de aproximadamente R\$ 9,1 MM e em 2017 próximo a R\$ 30,1 MM.  Houve crescimento anual de aproximadamente 50% todos os anos.  
+
+```{r fat_anos_gr, echo=FALSE}
+grid.arrange(
+  textGrob("Faturamento desde 2014", 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob("Crescimento de aproximadamente 50% anualmente",  
+           gp=gpar(fontsize=10, col="#000080"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  ggplot(fat_anos, aes(x=Ano)) + 
+    geom_bar(aes(y=Faturado), stat="identity", fill="#9ecae1") + 
+    geom_text(aes(y=Faturado, label=br_acc(Faturado)), vjust = 1.2, size = 3) + 
+  global_theme + gr_bar_theme + labs(x="ano", y=""),
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+# Principais clientes do Business Security por Quantidade de Equipamentos
+
+```{r clientes_ativos, include=FALSE}
+# Lista de clientes ativos com quantidade de elementos gerenciados
+total_clientes = ativos %>%
+  group_by(Cliente) %>%
+  summarise(`Total Equipamentos` = n()) %>%
+  arrange(desc(`Total Equipamentos`))
+```
+
+O Business Security tem hoje `r nrow(total_clientes)` clientes.  A tabela abaixo mostra os 20 maiores clientes do Business Security por total de equipamentos gerenciados.  
+
+Ri-Happy é um cliente de tecnologia Fortinet com contrato vendido em 2015 e início da implantação neste mesmo ano.  Os equipamentos foram ativados durante os anos de 2015 e 2016 e estão sob gestão do Business Security desde sua implantação.  Observamos, no entanto, que este cliente não está na lista de maiores faturamentos.  Isto se deve a não haver faturamento deste cliente para o Business Security pois a fatura é feita pela HITSS sem repasse dos recursos para a área de segurança. A receita anual da Ri-Happy é de aproximadamente R\$ 1 MM, o que a colocaria na sexta posição na lista de maiores faturamentos do Business Security.
+
+Marisa é um cliente com tecnologia Meraki.  Sua implantação se iniciou no ano de 2017 e será transferido, por decisão estratégica da companhia, para a equipe de redes PrimeSys em 2018.  O faturamento anual de Marisa está na faixa de R\$ 700 mil, o que a colocaria na décima posição em faturamento. 
+
+Ambos Ri-Happy e Marisa tem um modelo de negócio similar.  Costumamos chamar este modelo de _Connected Branch_.  Neste modelo o cliente tem um grande número de lojas ou subsidiárias distribuidas pelo país e necessita fechar uma VPN com o DataCenter.  Os equipamentos nas pontas são, em geral, equipamentos de baixo custo.  Além de Ri-Happy e Marisa, outros clientes com modelo similar de negócio são Boticário e Banco Carrefour.  Boticário está sob gestão da equipe de redes PrimeSys e Banco Carrefour com o Business Security.  Visto o potencial de vendas e de faturamento deste modelo de negócio, ele deveria ser documentado e "produtizado" de forma a permitir à equipe comercial abordar clientes similares com um discurso estruturado.
+
+O terceiro maior cliente do Business Security é o próprio Business Security que tem 48 equipamentos sob gestão interna.  Estes equipamentos são necessários para manter toda a infraestrutura de suporte aos clientes.  Há equipamentos de gestão de Logs, gestão de firewalls, SIEM (correlação de eventos), DNS, etc.
+
+```{r, echo=FALSE}
+kable(head(total_clientes, 20), booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+O gráfico abaixo mostra a quantidade de serviços ativados por ano desde o início do Business Security, para os clientes que ainda estão ativos.  Ou seja, é bem provável que muitos outros serviços tenham sido ativados em anos anteriores, mas os clientes já não são mais clientes do Business Security.  Vemos que o serviço mais antigo do Business Security foi ativado em 2002. 
+
+A partir de 2014, começa a haver um crescimento bastante grande dos clientes ativados.
+
+```{r ativacoes_anuais, echo=FALSE}
+# Total de equipamentos gerenciados por tecnologia
+ativos$ano_ativ = as.Date(cut(ativos$da, breaks = "years"))
+```  
+
+```{r gr_ativacoes_anuais, echo=FALSE}
+grid.arrange(
+  textGrob("Quantidade de serviços ativados no ano (somente para clientes ainda ativos)", 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob("Serviço mais antigo ativado em 2002",  
+           gp=gpar(fontsize=10, col="#000080"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  ggplot(ativos, aes(x=ano_ativ), na.rm=TRUE) +
+    geom_bar(fill="#9ecae1", na.rm = TRUE) + 
+    scale_x_date(date_breaks = "1 years", date_labels = "%Y", 
+                 limits=c(as.Date("2002-01-01"), as.Date("2017-12-31"))) + 
+    geom_text(aes(label = ..count..), stat="count", na.rm=TRUE, vjust = 1.2, size = 3) + 
+  global_theme + gr_bar_theme + labs(x="ano", y="Quatidade de serviços ativados"),
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+
+#geom_text(aes(y=stat_summary(fun.y = sum)), label=stat_summary(fun.y = sum), vjust = 1.2, size = 3) +
+#    scale_x_date(labels = date_format("%Y"), breaks = "1 year") +
+```
+
+
+# Visão Geral dos Serviços Gerenciados
+
+A figura abaixo mostra todos os equipamentos gerenciados pelo Business Security por tecnologia. Firewall é a principal tecnologia gerenciada, mas nos últimos anos houve grande número de venda de serviços de anti-DDoS de volumetria.  
+
+A tecnologia "Gerência" se refere às plataformas de gerência dos firewalls que são necessárias para a gestão de todos os nossos firewalls.
+
+O serviço de IPS (Intrusion Prevention System) se refere ao serviço pró-ativo de IPS fornecido pelo Business Security.  Neste serviço a monitoração é ativa e quando há algum tipo de evento de segurança identificado pela ferramenta, os analistas do SOC entram em contato com o cliente.  Este serviço é pouco comercializado devido aos custos e faz parte sobretudo do portfólio de grandes clientes. 
+
+Firewalls UTM (Unified Thread Management) podem ter a função de IPS ativada.  Neste caso, não há monitoramento ativo da solução de IPS:  as regras de filtragem são configuradas no sistema e o sistema se atualiza automaticamente, similar a um sistema de anti-vírus.  Nesta solução, eventos de segurança não são reportados para ao cliente.  
+
+A gestão pró-ativa de IPS em firewall UTM precisa ser "produtizada" requerendo integração com a solução de SIEM.  Visto termos mais de 700 firewalls com capacidade de IPS, este é um produto que tem grande potencial de vendas.
+
+```{r tot_equipe, echo=FALSE}
+# Total de equipamentos gerenciados por tecnologia
+equip_total = as.data.frame(table(ativos$`Tipo Serviço`))
+names(equip_total) = c("Tecnologia", "Quantidade")
+tot_equipe = equip_total %>% summarise(tot = sum(Quantidade))
+```
+
+
+```{r gr_col_equipamentos, echo=FALSE}
+grid.arrange(
+  textGrob("Equipamentos Gerenciados - Business Security", 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0(tot_equipe, " equipamentos gerenciados ordenados por tecnologia"),  
+           gp=gpar(fontsize=10, col="#000080"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  ggplot(equip_total, aes(x=reorder(Tecnologia, Quantidade),  y=Quantidade)) +
+  geom_bar(stat = "identity", fill="#9ecae1") + 
+  coord_flip() + geom_text(aes(label=Quantidade), hjust = 1.0, size = 3) + 
+  global_theme + gr_column_theme + labs(x="tecnologia", y=""),
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+```{r ano_interesse, echo=FALSE}
+# Definir ano de interesse... pode ser alterado
+ano = 2017
+inicio = make_date(ano, 1, 1)  # inicio = ISOdate(ano, 1, 1)
+fim = inicio + years(1)       # fim = ISOdate(ano, 12, 31)
+
+# Ano anterior para comparação
+ano_anterior = ano - 1
+inicio_anterior = make_date(ano_anterior, 1, 1) # ISOdate(ano_anterior, 1, 1)
+```
+
+# Equipe Perimetral
+
+## Aprovisionamento
+
+O aprovisionamento é todo o processo de elaboração do projeto de segurança perimetral e instalação dos equipamentos no cliente.  O principal equipamento de segurança perimetral é o firewall, mas alguns clientes também utilizam filtros de e-mail e web.   
+
+```{r perimetral, echo=FALSE}
+# Selecionar todos os firewalls ativados no ano especificado
+f_ano = ativos %>% filter(`Tipo Serviço` == "Firewall") %>%
+  filter(da >= inicio & da < fim)
+
+# Quantidade de equipamentos ativados no ano
+total_ativado_firewall = nrow(f_ano)
+
+# montar um DF com as frequencias de ativação por mês
+firewall_mes = as.data.frame(table(cut(f_ano$da, 'month')))
+names(firewall_mes) = c("Data", "Quantidade")
+firewall_mes$Data = as.Date(firewall_mes$Data)
+```
+
+```{r ano_anterior, echo=FALSE}
+# Firewalls no ano anterior
+f_ano_anterior = ativos %>% filter(`Tipo Serviço` == "Firewall") %>%
+  filter(da >= inicio_anterior & da < inicio)
+
+# Total de equipamentos ativados ano anterior
+f_total_ativado_anterior = nrow(f_ano_anterior)
+
+# montar um DF com as frequencias de ativação por mês no ano anterior
+firewall_mes_anterior = as.data.frame(table(cut(f_ano_anterior$da, 'month')))
+names(firewall_mes_anterior) = c("Data", "Quantidade")
+firewall_mes_anterior$Data = as.Date(firewall_mes_anterior$Data)
+```
+
+### Ativação de Firewalls por mês
+
+Durante o ano de `r ano` foram ativados e postos em produção `r total_ativado_firewall` firewalls. O gráfico abaixo mostra as ativações executadas por mês.
+
+Como pode ser visto, em alguns meses do ano foram colocados em produção mais de um firewall por dia.  Este alto volume se deve especialmente por causa do projeto Marisa, com tecnologia Meraki.
+
+Vemos abaixo que em `r ano_anterior` foram ativados `r f_total_ativado_anterior` firewalls.  Sendo assim o crescimento no aprovisionamento em `r ano` foi de `r br_acc(((total_ativado_firewall - f_total_ativado_anterior)/f_total_ativado_anterior) * 100)`% maior que em `r ano_anterior`.  No caso de `r ano_anterior`, o cliente com maior número de firewalls ativado foi Ri-Happy, com ativação de 95 firewalls.
+
+Podemos também observar que nos últimos dois anos, ou seja, durante 2016 e 2017 foram ativados `r total_ativado_firewall + f_total_ativado_anterior[[1]]` de um total de 733 firewalls.  Ou seja, `r br_acc((total_ativado_firewall + f_total_ativado_anterior[[1]])/733 * 100)`% dos firewalls foram ativados nos últimos dois anos.
+
+```{r gr_firewall_ativados, echo=FALSE}
+# fazer histograma com os dados de firewall_mes
+fm_graph_ano = ggplot(firewall_mes, aes(x=Data, y=Quantidade)) + 
+  geom_bar(stat="identity", fill="#9ecae1") + 
+  geom_text(aes(label=Quantidade), vjust = 1.2, size = 3)
+
+fm_graph_ano = fm_graph_ano + scale_x_date(labels = date_format("%b"), 
+                                           date_breaks = "1 month")
+fm_graph_ano = fm_graph_ano + global_theme + gr_bar_theme + labs(x="meses", y="")
+
+# Organizar o gráfico dentro do  grid
+a1 = arrangeGrob(
+  textGrob(paste0("Firewalls ativados por mês em ", ano), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", total_ativado_firewall[[1]], " ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  fm_graph_ano,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+
+```{r gr_firewall_ativados_anterior, echo=FALSE}
+# fazer histograma com os dados de firewall_mes
+fm_graph_anterior = ggplot(firewall_mes_anterior, aes(x=Data, y=Quantidade)) + 
+  geom_bar(stat="identity", fill="#9ecae1") + 
+  geom_text(aes(label=Quantidade), vjust = 1.2, size = 3)
+
+fm_graph_anterior = fm_graph_anterior + 
+  scale_x_date(labels = date_format("%b"), date_breaks = "1 month")
+
+fm_graph_anterior = fm_graph_anterior + global_theme + gr_bar_theme + labs(x="meses", y="")
+# fm_graph_anterior
+
+# Organizar o gráfico dentro do  grid
+a2 = arrangeGrob(
+  textGrob(paste0("Firewalls ativados por mês em ", ano_anterior), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", f_total_ativado_anterior[[1]], " ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  fm_graph_anterior,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+```{r firewalls_clients, echo=FALSE}
+grid.arrange(a1, a2, ncol=2)
+```
+
+### Equipamentos ativados por clientes
+
+```{r clientes_ativados, echo=FALSE}
+# eliminar os níveis que não estão na lista de clientes
+f_ano$Cliente = droplevels(f_ano$Cliente)
+
+# Calcular o número de clientes ativados
+clientes_ativados = as.data.frame(table(f_ano$Cliente))
+names(clientes_ativados) = c("Cliente", "Quantidade")
+
+# eliminar os níveis que não estão na lista de clientes
+f_ano_anterior$Cliente = droplevels(f_ano_anterior$Cliente)
+
+clientes_ativados_anterior = as.data.frame(table(f_ano_anterior$Cliente))
+names(clientes_ativados_anterior) = c("Cliente", "Quantidade")
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+dur = distinct(inventario %>% 
+                 select(Cliente, `Data de Assinatura do Contrato`, duracao, 
+                        `Data expiração do contrato`))
+dur
+```
+
+```{r, eval=FALSE, echo=FALSE}
+sdur = clientes_ativados %>% left_join(dur)
+sdur
+```
+
+```{r projetos, include=FALSE}
+# Ler arquivo de projetos
+projetos = read_csv2("../Dados/projetos.csv", 
+                     locale = locale(date_names = "br", encoding = "iso8859-1", 
+                                     decimal_mark = ",", grouping_mark = ".")) %>% 
+  mutate(valor_contrato = 
+           parse_number(Receita, 
+                        locale = locale(decimal_mark = ",", 
+                                        grouping_mark = ".")))
+
+# Converter campo Receita para número e chamar campo de valor_contrato
+projetos = projetos %>%
+  mutate(valor_contrato = 
+           parse_number(Receita, 
+                        locale = locale(decimal_mark = ",", 
+                                        grouping_mark = ".")))
+```
+
+O gráfico abaixo mostra a quantidade de firewalls ativados por clientes.  O cliente com maior número de firewalls ativados em `r ano` foi "Lojas Marisa" com tecnologia Meraki. Em `r ano_anterior` o cliente com maior número de firewalls ativados foi "Ri-Happy" com tecnologia Fortinet.
+
+```{r gr_firewall_clientes, echo=FALSE}
+
+f_cliente_ano = ggplot(clientes_ativados, 
+                    aes(x=reorder(Cliente, Quantidade), y=Quantidade)) + 
+  geom_bar(stat = "identity", fill="#9ecae1") + 
+  coord_flip() + geom_text(aes(label=Quantidade), hjust = 1.0, size = 3) + 
+  global_theme + gr_column_theme + labs(x="clientes", y="")
+
+# Organizar o gráfico dentro do  grid
+fc1 = arrangeGrob(
+  textGrob(paste0("Firewalls ativados em ", ano, " por cliente"), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", total_ativado_firewall[[1]], 
+                  " firewall e ", nrow(clientes_ativados), 
+                  " clientes ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  f_cliente_ano,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+
+fcliente_ano_anterior = ggplot(clientes_ativados_anterior, 
+                               aes(x=reorder(Cliente, Quantidade), y=Quantidade)) + 
+  geom_bar(stat = "identity", fill="#9ecae1") + 
+  coord_flip() + geom_text(aes(label=Quantidade), hjust = 1.0, size = 3) + 
+  global_theme + gr_column_theme + labs(x="clientes", y="")
+
+# Organizar o gráfico dentro do  grid
+fc2 = arrangeGrob(
+  textGrob(paste0("Firewalls ativados em ", ano_anterior, " por cliente"), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", f_total_ativado_anterior[[1]], 
+                  " firewall e ", nrow(clientes_ativados_anterior), 
+                  " clientes ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  fcliente_ano_anterior,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+
+```{r firewall_clients, echo=FALSE}
+grid.arrange(fc1, fc2, ncol=2)
+```
+
+### Valor dos contratos por cliente
+
+```{r include=FALSE}
+fc = clientes_ativados %>% 
+  left_join(select(projetos, `Cod Cliente`, valor_contrato), 
+            by=c("Cliente" = "Cod Cliente"))
+
+```
+
+Vemos a seguir o valor mensal dos contratos de todos os clientes ativados em 2017.  É importante notar que o valor completo do contrato somente será pago quanto todos os equipamentos do cliente tiverem sido ativados.  À medida que os firewalls do cliente são ativados, ele deveria começar a pagar o percentual do contrato equivalente à ativação de um novo equipamento.  Nem todos os contratos são claros na cobrança por equipamentos e muitas vezes há demora no início da cobrança ao cliente.
+
+Vemos que alguns clientes não tem faturamento para o Business Security.  Isto ocorre, em geral, quando todo o faturamento é feito para o DataCenter (ex: Accenture) ou quando o cliente é interno (ex: Projeto HCC).
+
+```{r, echo=FALSE}
+fc_rec = fc %>%
+  group_by(Cliente) %>%
+  summarise(`Receita Mensal` = sum(valor_contrato, na.rm = TRUE)) %>%
+  mutate(`Receita Anual` = `Receita Mensal` * 12) %>%
+  arrange(desc(`Receita Mensal`))
+
+fc_rec$`Receita Mensal` = br_acc(fc_rec$`Receita Mensal`)
+fc_rec$`Receita Anual` = br_acc(fc_rec$`Receita Anual`)
+
+fc_rec %>% kable(booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+
+```{r fc_tot, echo=FALSE}
+fc_mes_total = fc_rec %>% summarise(sum(`Receita Mensal`))
+fc_ano_total = fc_rec %>% summarise(sum(`Receita Anual`))
+```
+
+
+Os contratos em execução durante o ano de `r ano` perfazem um total mensal de R$ `r br_acc(fc_mes_total)` e valor anual de R$ `r br_acc(fc_ano_total)`.
+
+### Firewalls ativados por tecnologia
+
+Na tabela abaixo vemos a quantidade de firewalls ativados por fornecedor.  A grande maioria de equipamentos ativados foi em tecnologia Fortinet, seguida de perto de Cisco Meraki.  A tendência é que Meraki venha a ter mais equipamentos implementados que as outras tecnologias, visto que o serviço desenhado para Meraki (Internet Segura) tem custo inferior ao serviço prestado com as outras tecnologias.
+
+```{r tab_tec, echo=FALSE}
+
+# Tabela de firewalls por fornecedor
+tec_fornecedor = as.data.frame(table(f_ano$Fornecedor))
+names(tec_fornecedor) = c("Fornecedor", "Quantidade")
+tec_fornecedor %>% arrange(desc(Quantidade)) %>% kable(booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+
+### Custo dos Firewalls Vendidos
+
+A tabela abaixo mostra o custo dos firewalls vendidos por clientes.  Estes custos estão separados em custo de Hardware e de Software. As licenças de software são, em geral, adquiridas pelo período do contrato e ao final do período contratual são renovadas anualmente até o cancelamento do contrato ou assinatura de outro contrato com troca de equipamentos.
+
+Visto que o processo de venda de Meraki não segue o fluxo normal dos outros equipamentos, o Business Security não tem informações em relação ao custo de Hardware e Software destes equipamentos, mas, com toda a certeza o custo não é 0.  Nos casos de HCC, HOT e SAGE, estes projetos são de outras áreas da empresa e não há faturamento para o Business Security.
+
+```{r TAB_custo_prod, echo=FALSE}
+
+# calcular os custos por cliente para os firewalls no 'ano'
+totais = f_ano %>% 
+  group_by(Cliente) %>% 
+  summarise(Software = sum(vs, na.rm = TRUE),
+            Hardware = sum(vh, na.rm = TRUE),
+            Total = sum(vt, na.rm = TRUE))
+
+total_geral = f_ano %>% summarise(sum(vt, na.rm = TRUE))
+
+totais = as.data.frame(totais)
+
+totais$Software = br_acc(totais$Software)
+totais$Hardware = br_acc(totais$Hardware)
+totais$Total = br_acc(totais$Total)
+
+totais %>% arrange(desc(Total)) %>% 
+  kable(booktabs = T, longtable = T) %>% 
+  kable_styling(latex_options = "repeat_header", "striped", repeat_header_text = "")
+
+```
+
+O total dos custos dos firewalls vendidos é de R$`r br_acc(total_geral)`.
+
+## Operação Perimetral
+
+Uma vez o cliente ativado, ou seja, todo o aprovisionamento executado, o Business Security é responsável pela operação continuada dos equipamentos em regime 24 x 7.  Em geral, os contratos com clientes têm duração de 36 meses, mas há contratos menores de 12 e 24 meses.  Quando ocorre o aprovisionamento, ocorre também a aquisição dos equipamentos e de licenças em geral pelo período total do contrato. Muitos contratos prevêm renovação automática por um período de 12 meses.  Quando há a renovação automática, é necessário que sejam renovadas as licenças. 
+
+### Renovações em `r ano`
+
+```{r renovações, include=FALSE}
+# ler arquivo de renovações
+renovacao = read_csv2("../Dados/Renovacao.csv", 
+                      locale = locale(date_names = "br", encoding = "iso8859-1", 
+                                      decimal_mark = ",", grouping_mark = "."))
+
+# simplificar alguns nomes de clientes que são muito grandes
+renovacao$Cliente = renovacao$Cliente %>% 
+  recode(`UNIAO BRASILEIRA DE EDUCACAO E ENSINO (UBEE)` = "UBEE")
+
+renovacao$Cliente = renovacao$Cliente %>% 
+  recode(`CENIBRA - CELULOSE NIPO BRASILEIRA S A` = "CENIBRA")
+
+# transformar em fator
+renovacao$Cliente = factor(renovacao$Cliente)
+```
+
+Quando um contrato é assinado, inicialmente são adquiridas licenças pelo período total do contrato, ou seja, para um contrato de 36 meses, adquiri-se licença para todos os 36 meses.  Uma vez a licença expirada, a renovação ocorre anualmente, visto que na grande maioria dos casos o contrato é automaticamente renovado por período de um ano.
+
+No ano de `r ano` os seguintes clientes tiverem suas licenças renovados por mais um ano
+
+```{r renew_ano, include=FALSE}
+
+# Adicionar colunas dr (data renovação) e vr (valor renovação) em formato adequado para
+# processamento
+renovacao = renovacao %>%
+  mutate(
+    dr = parse_date(`Data Renovação`, format="%d/%m/%Y"),
+    vr = parse_number(`Valor Renovação`, 
+                      locale = locale(decimal_mark = ",", grouping_mark = "."))
+    ) %>%
+  filter(dr >= inicio & dr <fim)
+```
+
+```{r lista_renov, echo=FALSE}
+# calcular os custos por cliente para os firewalls no 'ano'
+totais_renov = renovacao %>% 
+  group_by(Cliente) %>% 
+  summarise(Total = br_acc(sum(vr, na.rm = TRUE)))
+
+total_geral_renov = renovacao %>% summarise(sum(vr, na.rm = TRUE))
+
+totais_renov = as.data.frame(totais_renov)
+totais_renov$Total = br_acc(totais_renov$Total)
+totais_renov %>% arrange(desc(Total)) %>% kable(booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+```
+
+O custo de renovação durante o ano de `r ano` foi de R$`r br_acc(total_geral_renov)`
+
+# Equipe de Monitoração
+
+Os serviços prestados pela equipe de monitoração são os de gestão de IPS, anti-DDoS, Pravail e SIEM.
+
+```{r monitor_ano, echo=FALSE}
+
+# Selecionar serviços monitorados
+monitor_ano = ativos %>% 
+  filter(`Tipo Serviço` == "DDOS" | `Tipo Serviço` == "IPS" | 
+           `Tipo Serviço` == "Pravail" | `Tipo Serviço` == "SIEM") %>%
+  filter(da >= inicio & da < fim)
+
+# Quantidade de equipamentos ativados no ano
+total_ativado_monitor = nrow(monitor_ano)
+
+# montar um DF com as frequencias de ativação por mês
+monitor_mes = as.data.frame(table(cut(monitor_ano$da, 'month')))
+names(monitor_mes) = c("Data", "Quantidade")
+monitor_mes$Data = as.Date(monitor_mes$Data)
+```
+
+
+```{r monitor_ano_anterior, echo=FALSE}
+# Firewalls no ano anterior
+monitor_ano_anterior = ativos %>% 
+  filter(`Tipo Serviço` == "DDOS" | `Tipo Serviço` == "IPS" | 
+           `Tipo Serviço` == "Pravail" | `Tipo Serviço` == "SIEM") %>%
+  filter(da >= inicio_anterior & da < inicio)
+
+# Total de equipamentos ativados ano anterior
+monitor_total_ativado_anterior = nrow(monitor_ano_anterior)
+
+# montar um DF com as frequencias de ativação por mês no ano anterior
+monitor_mes_anterior = as.data.frame(table(cut(monitor_ano_anterior$da, 'month')))
+names(monitor_mes_anterior) = c("Data", "Quantidade")
+monitor_mes_anterior$Data = as.Date(monitor_mes_anterior$Data)
+```
+
+## Aprovisionamento dos Serviços de Monitoração por mês
+
+Durante o ano de `r ano` foram aprovisionados `r total_ativado_monitor` serviços de monitoração. O gráfico abaixo mostra os aprovisionametos executadas por mês.
+
+Vemos abaixo que em `r ano_anterior` foram aprovisionados `r monitor_total_ativado_anterior` serviços de monitoraçao, indicando que houve um crescimento de `r br_acc(((total_ativado_monitor - monitor_total_ativado_anterior)/monitor_total_ativado_anterior)*100)`% em `r ano` em relação a `r ano_anterior`. 
+
+Visto que há hoje 155 links sendo monitorados contra ataques de negação de serviço e que nos últimos dois anos foram ativados `r total_ativado_monitor + monitor_total_ativado_anterior`, temos que `r br_acc(((total_ativado_monitor + monitor_total_ativado_anterior)/155)*100)`% das monitorações começaram nos últimos dois anos.
+
+```{r gr_monitor_ativados, echo=FALSE}
+
+# fazer histograma com os dados de firewall_mes
+mon_mes_graph_ano = ggplot(monitor_mes, aes(x=Data, y=Quantidade)) + 
+  geom_bar(stat="identity", fill="#9ecae1") + 
+  geom_text(aes(label=Quantidade), vjust = 1.2, size = 3)
+
+mon_mes_graph_ano = mon_mes_graph_ano + 
+  scale_x_date(labels = date_format("%b"), date_breaks = "1 month")
+mon_mes_graph_ano = mon_mes_graph_ano + global_theme + 
+  gr_bar_theme + labs(x="meses", y="")
+
+# Organizar o gráfico dentro do  grid
+a1 = arrangeGrob(
+  textGrob(paste0("Serviços de monitoração ativados em ", ano), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", total_ativado_monitor[[1]], " ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  mon_mes_graph_ano,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+
+```{r gr_monitor_ativados_anterior, echo=FALSE}
+
+# fazer histograma com os dados de firewall_mes
+mon_mes_graph_anterior = ggplot(monitor_mes_anterior, aes(x=Data, y=Quantidade)) + 
+  geom_bar(stat="identity", fill="#9ecae1") + 
+  geom_text(aes(label=Quantidade), vjust = 1.2, size = 3)
+
+mon_mes_graph_anterior = mon_mes_graph_anterior + 
+  scale_x_date(labels = date_format("%b"), date_breaks = "1 month")
+
+mon_mes_graph_anterior = mon_mes_graph_anterior + global_theme + 
+  gr_bar_theme + labs(x="meses", y="")
+
+# Organizar o gráfico dentro do  grid
+a2 = arrangeGrob(
+  textGrob(paste0("Serviços de monitoração ativados em ", ano_anterior), 
+           gp=gpar(fontsize=12, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  textGrob(paste0("Total de ", monitor_total_ativado_anterior[[1]], 
+                  " ativados no ano."),  
+           gp=gpar(fontsize=10, col="#000080"),
+           x=unit(0.005, "npc"), just=c("left", "bottom")),
+  mon_mes_graph_anterior,
+  ncol=1,
+  heights=c(0.075, 0.025, 0.85, 0.05)
+)
+```
+
+```{r monitor_clients, echo=FALSE}
+grid.arrange(a1, a2, ncol=2)
+```
+
+## Clientes monitoração aprovisionados
+
+A tabela abaixo mostra os clientes ativados e a quantidade de links sob monitoração.
+
+```{r clientes_mon_ativados, echo=FALSE}
+
+# eliminar os níveis que não estão na lista de clientes
+monitor_ano$Cliente = droplevels(monitor_ano$Cliente)
+
+# Calcular o número de clientes ativados
+mon_clientes_ativados = as.data.frame(table(monitor_ano$Cliente))
+names(mon_clientes_ativados) = c("Cliente", "Quantidade")
+mon_clientes_ativados %>% arrange(desc(Quantidade)) %>% 
+  kable(booktabs = T, longtable = T) %>%
+  kable_styling(latex_options = "repeat_header", "striped", repeat_header_text = "")
+
+# eliminar os níveis que não estão na lista de clientes
+# f_ano_anterior$Cliente = droplevels(f_ano_anterior$Cliente)
+
+# clientes_ativados_anterior = as.data.frame(table(f_ano_anterior$Cliente))
+# names(clientes_ativados_anterior) = c("Cliente", "Quantidade")
+```
+
+

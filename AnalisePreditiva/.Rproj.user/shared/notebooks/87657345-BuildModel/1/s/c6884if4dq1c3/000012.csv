@@ -1,0 +1,3 @@
+"0","sim1 = sim1 %>%"
+"0","  add_residuals(sim1_lm_fit)"
+"0","sim1"

@@ -1,0 +1,3 @@
+"0","geom = geom_bar(stat=""identity"", fill=""#9ecae1"", width = 0.8)"
+"0","pg = pg + geom"
+"0","pg"

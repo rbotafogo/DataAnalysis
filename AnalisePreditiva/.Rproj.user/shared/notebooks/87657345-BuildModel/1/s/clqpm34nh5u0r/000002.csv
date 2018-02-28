@@ -1,0 +1,1 @@
+"0","ggplot(sim1, aes(x = x, y = y)) + geom_point()"

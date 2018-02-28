@@ -1,0 +1,4 @@
+"0","# prep the predictions for submissions"
+"0","sub <- data.frame(id = as.integer(test_id), target = preds_final$Yes)"
+"0","# write to csv"
+"0","write.csv(sub, '20171110xgb_v2.csv', row.names = FALSE)"

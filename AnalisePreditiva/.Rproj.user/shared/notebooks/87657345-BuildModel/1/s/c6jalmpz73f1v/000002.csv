@@ -1,0 +1,3 @@
+"0","grid3 = sim3 %>% data_grid(x1, x2)"
+"0","grid3 = grid3 %>% gather_predictions(sim3_lm_fit1, sim3_lm_fit2)"
+"0","grid3"

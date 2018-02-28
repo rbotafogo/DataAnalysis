@@ -1,0 +1,6 @@
+"0","t = sapply(seguro_test$ps_reg_03, convert)"
+"0","seguro_test$RegA = t[1,]"
+"0","seguro_test$RegM = t[2,]"
+"0","calc = grep(""calc"", names(seguro_test))"
+"0","seguro_test = seguro_test[, -calc, with=FALSE]"
+"0","seguro_test$ps_reg_03 = NULL"

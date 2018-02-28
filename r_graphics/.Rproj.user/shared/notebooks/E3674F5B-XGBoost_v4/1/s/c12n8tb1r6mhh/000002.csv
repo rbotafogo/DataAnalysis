@@ -1,0 +1,6 @@
+"0","c1_train = subset(seguro_train, clusters$cluster == 1)"
+"0","c1_target = y_train[clusters$cluster == 1]"
+"0","c2_train = subset(seguro_train, clusters$cluster == 2)"
+"0","c2_target = y_train[clusters$cluster == 2]"
+"0","c3_train = subset(seguro_train, clusters$cluster == 3)"
+"0","c3_target = y_train[clusters$cluster == 3]"

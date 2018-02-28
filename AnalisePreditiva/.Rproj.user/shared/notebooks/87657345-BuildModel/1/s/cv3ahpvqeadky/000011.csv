@@ -1,0 +1,2 @@
+"0","sim1 %>%"
+"0","  ggplot(aes(resid)) + geom_freqpoly(binwidth = 0.5)"

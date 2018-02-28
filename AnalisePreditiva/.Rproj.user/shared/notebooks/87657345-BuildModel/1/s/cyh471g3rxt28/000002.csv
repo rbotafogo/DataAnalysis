@@ -1,0 +1,6 @@
+"0","ggplot(sim1, aes(x, y)) +"
+"0","  # colocar os pontos dos dados com tamanho 2 e cor especificada"
+"0","  geom_point(size = 2, color = ""grey30"") +"
+"0","  # adicionar as 10 primeiras ablines "
+"0","  geom_abline(aes(intercept = a1, slope = a2, color = -dist), "
+"0","              data = filter(models, rank(dist) <= 10))"

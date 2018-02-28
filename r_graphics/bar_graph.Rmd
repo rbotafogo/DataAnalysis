@@ -1,0 +1,72 @@
+---
+title: "Bar Graph"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(gcookbook)
+```
+
+```{r}
+upc = subset(uspopchange, rank(Change)>20)
+str(upc)
+```
+
+
+```{r}
+# create graphics. Objects should be filled with grey to make a basic chart
+pg = ggplot(data = upc, aes(x=Abb, y=Change))
+
+# type of graph
+geom = geom_bar(stat="identity", fill="grey", width = 0.8)
+pg = pg + geom 
+
+# nice blue color
+# fill="#9ecae1"
+
+# Add title, subtitle and caption
+pg = pg + labs(title = "Number of values per bar", 
+               subtitle = "This is something very important", 
+               caption = "Source: the Lahman baseball data", 
+               x = "Abb", y = "Change") 
+
+# add coordinate aspect ration. This needs to be changed according with
+# the number of bars plotted.
+pg = pg + coord_fixed(ratio=0.4)
+
+# remove major grids
+th = theme(panel.grid.major = element_blank())
+# remove minor grids
+th = th + theme(panel.grid.minor = element_blank())
+# remove border
+th = th + theme(panel.border = element_blank())
+# remove background
+th = th + theme(panel.background = element_blank())
+# Adjust the title
+th = th + theme(plot.title = element_text(hjust = 0))
+
+# Work on the x and y labels
+# Move the x and y labels to the border
+th = th + theme(axis.title = element_text(color="#666666", face="bold", size=10, hjust=1))
+th = th + theme(axis.text.x = element_text(angle = 45, vjust = 0.15))
+
+# add labels to the bars
+# labels = geom_text(aes(label=Change), vjust = -0.1, size = 2)
+
+
+# add basic theme to graph and plot
+pg = pg + th
+pg
+```
+
+Change the color of the graph to a nice blue color
+
+```{r}
+geom = geom_bar(stat="identity", fill="#9ecae1", width = 0.8)
+pg = pg + geom
+pg
+```
+
+
+

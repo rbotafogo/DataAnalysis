@@ -1,0 +1,35 @@
+% usar portugues do Brasil
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+
+\usepackage{geometry}
+\geometry{a4paper, top=1in}
+
+\usepackage{import}
+
+\usepackage{bbm}
+\usepackage{threeparttable}
+\usepackage{booktabs}
+\usepackage{expex}
+
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+% \usepackage{xcolor}
+\usepackage{lipsum}
+
+% disponibilizar o comando lastpage
+\usepackage{lastpage}
+
+% tamanho do font padrão 11pt
+\usepackage[fontsize=11pt]{scrextend}
+
+% comandos para formatar uma tabela
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\newcommand{\RtoLatex}[2]{\newcommand{#1}{#2}}
+

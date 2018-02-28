@@ -1,0 +1,4 @@
+"0","sim1 %>% "
+"0","  ggplot(aes(x, y)) + geom_point() +"
+"0","  geom_abline(intercept = coef(sim1_lm_fit)[[1]], "
+"0","              slope = coef(sim1_lm_fit)[[2]], color = ""red"")"

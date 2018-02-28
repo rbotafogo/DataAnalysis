@@ -1,0 +1,6 @@
+"0","sim3_1 = sim3 %>% filter(x2 == ""d"")"
+"0","sim3_1_lm_fit = lm(data = sim3_1, y ~ x1)"
+"0","sim3_1 %>%"
+"0","  ggplot(aes(x1, y)) + geom_point() +"
+"0","  geom_abline(intercept = coef(sim3_1_lm_fit)[[1]], "
+"0","              slope = coef(sim3_1_lm_fit)[[2]], color = ""red"")"

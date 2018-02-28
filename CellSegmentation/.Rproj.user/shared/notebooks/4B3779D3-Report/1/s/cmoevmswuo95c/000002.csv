@@ -1,0 +1,5 @@
+"0","# obter os elementos com maior probabilidade de erro, ou seja, aqueles cuja a probabilidade está perto de # 50%.  Posteriormente, o ideal é variar este valor de forma a encontrar o melhor ""range""."
+"0","range = 0.20"
+"0","# definir a variável erro_pot (erro potencial) como os elementos cujo erro está dentro do range em torno"
+"0","# de 50%"
+"0","erro_pot = seg_train13_glm_pred > (0.5 - range) & seg_train13_glm_pred < (0.5 + range) "

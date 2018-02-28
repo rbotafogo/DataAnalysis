@@ -1,0 +1,1 @@
+"0","preds_final <- predict(xgbmod, newdata = seguro_test, type = ""prob"")"

@@ -1,0 +1,3 @@
+"0","t = preProcess(titanic, method = ""knnImpute"", k = 5, knnSummary = ""mean"")"
+"0","trans = predict(t, titanic)"
+"0","trans = response"

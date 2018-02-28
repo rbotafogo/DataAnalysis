@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Titanic Dataset Analysis\"\noutput: html_notebook\n---\n\n```{r setup, echo=FALSE}\n\nlibrary(tidyverse)\nlibrary(caret)\nlibrary(impute)\nlibrary(RANN)\n```\n\n# Read the data\n\n```{r train_read, echo=FALSE}\ntrain = read_csv(\"train.csv\")\n```\n\n1. PassengerID is the id of the passenger, should not be used in any prediction.\n1. Sex, class and Embarked are factors\n1. Let´s remove the Name, Ticket number\n1. We are also removing in this first analysis the cabin number.  We believe that this will be usefull later, since if a person in a cabin has survived, then it is likely that other passangers from the same cabin have also survided.\n\n```{r}\nresponse = train[, 2]\ntitanic = train[, -c(1, 2, 4, 9, 11)]\ntitanic$Sex = factor(titanic$Sex)\ntitanic$Embarked = factor(titanic$Embarked)\ntitanic$Pclass = factor(titanic$Pclass)\nstr(titanic)\n```\n\n# First analysis on the data\n\n```{r}\nsummary(titanic)\n```\n\nFirst we observe that 38,38% of the passangers survived the shipwreck (mean of Survived).  There were more males that females in the Titanic.  Age varied from infant (0.42) to a maximum of 80 years old.  There are 177 missing values that we might have to estimate somehow.  There were people travelling alone and some with theire families - group of 8.  \n\nLet´s impute values for the missing Age.  We will use a K-nearest neighboors imputation method with K = 5.  Using \"caret\" preProcess will also \"center\" and \"scale\" the data.\n\n```{r}\nt = preProcess(titanic, method = \"knnImpute\", k = 5, knnSummary = \"mean\")\ntrans = predict(t, titanic)\ntrans$Survived = response$Survived\n```\n\n\n\n```{r, eval=FALSE}\nmale_age = titanic %>% filter(Sex == \"male\") %>% summarise(mean(Age, na.rm = TRUE))\nfem_age = titanic %>% filter(Sex == \"female\") %>% summarise(mean(Age, na.rm = TRUE))\n\ntitanic = titanic %>% mutate(\n  Age = if_else(is.na(Age), \n                if_else(Sex == \"male\", male_age[[1]], fem_age[[1]]),\n                Age)\n  \n)\n\n```\n\n# Explore the data\n\n## Survived by Class\n\nLet´s explore how many people survided by passanger class\n\n```{r}\ntable(titanic$Survived, titanic$Pclass)\n```\n\nNumber of passangers in each class\n```{r}\nclasses = c(80 + 136, 97 + 87, 372 + 119)\npercent_death = c(80/classes[1], 97/classes[2], 372/classes[3])\nclasses\npercent_death\n```\n\nWe have here a baseline prediction.\n\n1. Classe 1: Predict 37,03% death rate\n1. Classe 2: Predict 52,71% death rate\n1. Classe 3: Predict 75,76% death rate\n\nLet´s do a linear regression of Survived vs Pclass\n```{r}\ntrans_glm_fit = glm(Survived ~ Pclass, data = trans)\nsummary(trans_glm_fit)\n```\n\nFirst we note that R has created dummy variables Pclass2 and Pclass3.  Pclass1 is the baseline class.  Then we note that Pclass2 and Pclass3 are highly significant, which was expected, since we observed that the probability of dying in class 3 is much higher than the probablility of dying if you were in class 1.  Class 2 being in the middle.\n\n## Age\n\nLet´s now take a look at Age vs Survival rate.  We expect that younger people should have a higher survival rate than older passangers.\n\n```{r}\nggplot(aes(Age), data = titanic) + geom_histogram()\n```\n\n",
+    "created" : 1513875375947.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3882965917",
+    "id" : "D1763353",
+    "lastKnownWriteTime" : 1514301306,
+    "last_content_update" : 1514301304514,
+    "path" : "T:/Rodrigo/Desenv/titanic/titanic.Rmd",
+    "project_path" : "titanic.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "last_setup_crc32" : "2B1BE757381e3f48",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

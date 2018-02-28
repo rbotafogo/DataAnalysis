@@ -1,0 +1,8 @@
+"0","male_age = titanic %>% filter(Sex == ""male"") %>% summarise(mean(Age, na.rm = TRUE))"
+"0","fem_age = titanic %>% filter(Sex == ""female"") %>% summarise(mean(Age, na.rm = TRUE))"
+"0","titanic = titanic %>% mutate("
+"0","  Age = if_else(is.na(Age), "
+"0","                if_else(Sex == ""male"", male_age[[1]], fem_age[[1]]),"
+"0","                Age)"
+"0","  "
+"0",")"

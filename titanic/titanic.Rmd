@@ -1,0 +1,104 @@
+---
+title: "Titanic Dataset Analysis"
+output: html_notebook
+---
+
+```{r setup, echo=FALSE}
+
+library(tidyverse)
+library(caret)
+library(impute)
+library(RANN)
+```
+
+# Read the data
+
+```{r train_read, echo=FALSE}
+train = read_csv("train.csv")
+```
+
+1. PassengerID is the id of the passenger, should not be used in any prediction.
+1. Sex, class and Embarked are factors
+1. Let´s remove the Name, Ticket number
+1. We are also removing in this first analysis the cabin number.  We believe that this will be usefull later, since if a person in a cabin has survived, then it is likely that other passangers from the same cabin have also survided.
+
+```{r}
+response = train[, 2]
+titanic = train[, -c(1, 2, 4, 9, 11)]
+titanic$Sex = factor(titanic$Sex)
+titanic$Embarked = factor(titanic$Embarked)
+titanic$Pclass = factor(titanic$Pclass)
+str(titanic)
+```
+
+# First analysis on the data
+
+```{r}
+summary(titanic)
+```
+
+First we observe that 38,38% of the passangers survived the shipwreck (mean of Survived).  There were more males that females in the Titanic.  Age varied from infant (0.42) to a maximum of 80 years old.  There are 177 missing values that we might have to estimate somehow.  There were people travelling alone and some with theire families - group of 8.  
+
+Let´s impute values for the missing Age.  We will use a K-nearest neighboors imputation method with K = 5.  Using "caret" preProcess will also "center" and "scale" the data.
+
+```{r}
+t = preProcess(titanic, method = "knnImpute", k = 5, knnSummary = "mean")
+trans = predict(t, titanic)
+trans$Survived = response$Survived
+```
+
+
+
+```{r, eval=FALSE}
+male_age = titanic %>% filter(Sex == "male") %>% summarise(mean(Age, na.rm = TRUE))
+fem_age = titanic %>% filter(Sex == "female") %>% summarise(mean(Age, na.rm = TRUE))
+
+titanic = titanic %>% mutate(
+  Age = if_else(is.na(Age), 
+                if_else(Sex == "male", male_age[[1]], fem_age[[1]]),
+                Age)
+  
+)
+
+```
+
+# Explore the data
+
+## Survived by Class
+
+Let´s explore how many people survided by passanger class
+
+```{r}
+table(titanic$Survived, titanic$Pclass)
+```
+
+Number of passangers in each class
+```{r}
+classes = c(80 + 136, 97 + 87, 372 + 119)
+percent_death = c(80/classes[1], 97/classes[2], 372/classes[3])
+classes
+percent_death
+```
+
+We have here a baseline prediction.
+
+1. Classe 1: Predict 37,03% death rate
+1. Classe 2: Predict 52,71% death rate
+1. Classe 3: Predict 75,76% death rate
+
+Let´s do a linear regression of Survived vs Pclass
+```{r}
+trans_glm_fit = glm(Survived ~ Pclass, data = trans)
+summary(trans_glm_fit)
+```
+
+First we note that R has created dummy variables Pclass2 and Pclass3.  Pclass1 is the baseline class.  Then we note that Pclass2 and Pclass3 are highly significant, which was expected, since we observed that the probability of dying in class 3 is much higher than the probablility of dying if you were in class 1.  Class 2 being in the middle.
+
+## Age
+
+Let´s now take a look at Age vs Survival rate.  We expect that younger people should have a higher survival rate than older passangers.
+
+```{r}
+ggplot(aes(Age), data = titanic) + geom_histogram()
+```
+

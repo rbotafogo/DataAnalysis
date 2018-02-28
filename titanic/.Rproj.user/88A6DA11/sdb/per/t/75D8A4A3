@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1513882125470.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "75D8A4A3",
+    "lastKnownWriteTime" : 27303364806049904,
+    "last_content_update" : 1513882125470,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "BE9B5588",
+        "caption" : "fem_age",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=fem_age&cache_key=BE9B5588",
+        "displayedObservations" : 1,
+        "environment" : "",
+        "object" : "fem_age",
+        "preview" : 0,
+        "totalObservations" : 1,
+        "variables" : 1
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
